@@ -1,0 +1,58 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Application user",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Bot": {
+      "title": "Bot",
+      "description": "Discord bot configuration",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "language": { "type": "string", "enum": ["javascript", "python"] },
+        "code": { "type": "string" },
+        "status": { "type": "string", "enum": ["online", "offline"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "code"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Pack purchase order",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "user": { "type": "string", "format": "email" },
+        "pack": { "type": "string" },
+        "status": { "type": "string" },
+        "date": { "type": "string" }
+      },
+      "required": ["userId", "user", "pack", "status", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data"
+    },
+    "/bots/{botId}": {
+      "schema": "Bot",
+      "description": "Bot configurations"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Pending pack orders"
+    }
+  }
+}

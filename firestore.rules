@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required, email format)
+    //   - displayName: string
+    //   - photoURL: string
+    //
+    // Collection: bots
+    // Fields:
+    //   - userId: string (required)
+    //   - name: string (required)
+    //   - description: string
+    //   - language: string (javascript/python)
+    //   - code: string (required)
+    //   - status: string (online/offline)
+    //   - created_at: timestamp
+    //
+    // ===============================================================
+
+    //
+    // Collection: orders
+    // Fields:
+    //   - userId: string (required)
+    //   - user: string (required, email format)
+    //   - pack: string (required)
+    //   - status: string (required)
+    //   - date: string (required)
+    //
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (request.auth.token.email == "nonoglsk@gmail.com" ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin'));
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUser(data) {
+      let uid = data.get('uid', '');
+      return ((isAuthenticated() && uid == request.auth.uid) || (uid is string && uid.matches("^discord_.*"))) &&
+             isValidEmail(data.get('email', '')) &&
+             (!('selectedPack' in data) || data.selectedPack in ['FREE', 'INITIAL', 'EXTRA', 'SUR_MESURE']);
+    }
+
+    function isValidBot(data) {
+      let userId = data.get('userId', '');
+      return data.keys().hasAll(['userId', 'name', 'code']) &&
+             ((isAuthenticated() && userId == request.auth.uid) || (userId is string && userId.matches("^discord_.*"))) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.code is string && data.code.size() > 0 && data.code.size() < 100000;
+    }
+
+    function isValidOrder(data) {
+      return data.userId is string && data.userId.size() > 0 &&
+             data.user is string &&
+             data.pack is string &&
+             data.status is string &&
+             data.date is string;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read, write: if userId.matches("^discord_.*") || isOwner(userId) || isAdmin();
+    }
+
+    match /bots/{botId} {
+      allow read: if isAdmin() || 
+                     (request.auth == null && resource != null && resource.data.userId.matches("^discord_.*")) ||
+                     (isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid));
+      
+      allow create: if isValidBot(request.resource.data);
+      
+      allow update, delete: if isAdmin() || 
+                             (request.auth == null && resource != null && resource.data.userId.matches("^discord_.*")) ||
+                             (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+
+    match /orders/{orderId} {
+      // Allow read/delete for admin or unauthenticated staff (temporary fix for dashboard)
+      allow read, delete: if isAdmin() || request.auth == null;
+      // Allow create if data is valid
+      allow create: if isValidOrder(request.resource.data);
+    }
+  }
+}
