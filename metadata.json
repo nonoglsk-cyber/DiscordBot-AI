@@ -1,5 +1,94 @@
 {
-  "name": "DiscordBot AI",
-  "description": "Générez, personnalisez et hébergez vos bots Discord en quelques secondes grâce à l'intelligence artificielle.",
-  "requestFramePermissions": []
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Application user",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Bot": {
+      "title": "Bot",
+      "description": "Discord bot configuration",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "language": { "type": "string", "enum": ["javascript", "python"] },
+        "code": { "type": "string" },
+        "status": { "type": "string", "enum": ["online", "offline"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "code"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Pack purchase order",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "user": { "type": "string", "format": "email" },
+        "pack": { "type": "string" },
+        "status": { "type": "string" },
+        "date": { "type": "string" }
+      },
+      "required": ["userId", "user", "pack", "status", "date"]
+    },
+    "Ticket": {
+      "title": "Ticket",
+      "description": "Support ticket",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "user": { "type": "string", "format": "email" },
+        "subject": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["OUVERT", "EN ATTENTE", "FERMÉ"] },
+        "assignedStaffId": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "user", "subject", "description", "status", "created_at"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Ticket chat message",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "text": { "type": "string" },
+        "isStaff": { "type": "boolean" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "text", "isStaff", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data"
+    },
+    "/bots/{botId}": {
+      "schema": "Bot",
+      "description": "Bot configurations"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Pending pack orders"
+    },
+    "/tickets/{ticketId}": {
+      "schema": "Ticket",
+      "description": "Support tickets"
+    },
+    "/tickets/{ticketId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Chat messages for a ticket"
+    }
+  }
 }

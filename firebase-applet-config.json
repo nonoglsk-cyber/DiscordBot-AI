@@ -1,10 +1,106 @@
-{
-  "projectId": "gen-lang-client-0714455109",
-  "appId": "1:364703496770:web:925a5932c7d1d8e2770bdb",
-  "apiKey": "AIzaSyBwQigvOBC1lTZeV5g_ms_5i3ZtnuJ_prI",
-  "authDomain": "gen-lang-client-0714455109.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-31469daa-388f-4f40-8d46-b5592d7b61a8",
-  "storageBucket": "gen-lang-client-0714455109.firebasestorage.app",
-  "messagingSenderId": "364703496770",
-  "measurementId": ""
-}
+import React, { useEffect, useRef, useState } from 'react';
+
+const TechBackground: React.FC = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [mouse, setMouse] = useState({ x: -1000, y: -1000 });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    const drawGrid = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      const gridSize = 45;
+      const dotSize = 1;
+      
+      // Draw grid dots with visibility based on mouse distance
+      for (let x = 0; x <= canvas.width; x += gridSize) {
+        for (let y = 0; y <= canvas.height; y += gridSize) {
+          const dx = mouse.x - x;
+          const dy = mouse.y - y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const maxDistance = 400;
+          
+          let opacity = 0.03; // Base visibility
+          if (distance < maxDistance) {
+            opacity = 0.03 + (1 - distance / maxDistance) * 0.15;
+          }
+          
+          // Junction Dot
+          ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+          ctx.beginPath();
+          ctx.arc(x, y, dotSize, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Subtle Grid Lines
+          ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.2})`;
+          ctx.lineWidth = 0.3;
+          if (x + gridSize <= canvas.width) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + gridSize, y);
+            ctx.stroke();
+          }
+          if (y + gridSize <= canvas.height) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + gridSize);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Flashlight glow
+      const gradient = ctx.createRadialGradient(
+        mouse.x, mouse.y, 0,
+        mouse.x, mouse.y, 350
+      );
+      
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.05)');
+      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      setMouse({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener('resize', resize);
+    window.addEventListener('mousemove', handleMouseMove);
+
+    resize();
+    
+    let frameId: number;
+    const render = () => {
+      drawGrid();
+      frameId = requestAnimationFrame(render);
+    };
+    render();
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(frameId);
+    };
+  }, [mouse]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none z-0 bg-[#050505]"
+    />
+  );
+};
+
+export default TechBackground;
